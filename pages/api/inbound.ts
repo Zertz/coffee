@@ -66,7 +66,9 @@ export default (req: NextApiRequest, res: NextApiResponse<Response>) => {
   const [, ...order] = TextBody.substring(
     TextBody.indexOf("Capsules"),
     Math.min(TextBody.indexOf("Accessories"), TextBody.indexOf("Subtotal"))
-  ).split("\n");
+  )
+    .split("\r\n")
+    .filter(Boolean);
 
   console.info(order);
 
