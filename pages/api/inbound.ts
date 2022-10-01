@@ -55,9 +55,14 @@ type Response = {
 };
 
 export default (req: NextApiRequest, res: NextApiResponse<Response>) => {
-  const { HtmlBody, TextBody } = req.body as Request;
+  const { TextBody } = req.body as Request;
 
-  console.info({ HtmlBody, TextBody });
+  console.info(
+    TextBody.substring(
+      TextBody.indexOf("Capsules"),
+      TextBody.indexOf("Subtotal")
+    )
+  );
 
   res.status(200).end();
 };
