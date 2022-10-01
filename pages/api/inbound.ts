@@ -70,7 +70,52 @@ export default (req: NextApiRequest, res: NextApiResponse<Response>) => {
     .split("\r\n")
     .filter(Boolean);
 
-  console.info(order);
+  const coffee: {
+    name: string;
+    quantity: number;
+    total_price: number;
+    unit_price: number;
+  }[] = [];
+
+  for (let i = 0; i < order.length; i += 1) {
+    switch (i % 3) {
+      case 0: {
+        const name = order[i];
+
+        coffee.push({
+          name,
+          quantity: 0,
+          total_price: 0,
+          unit_price: 0,
+        });
+
+        break;
+      }
+      case 1: {
+        const [quantity, unit_price] = order[i].split(" x $");
+
+        coffee[coffee.length - 1] = {
+          ...coffee[coffee.length - 1],
+          quantity: Number(quantity),
+          unit_price: Number(unit_price),
+        };
+
+        break;
+      }
+      case 2: {
+        const [, total_price] = order[i].split("$");
+
+        coffee[coffee.length - 1] = {
+          ...coffee[coffee.length - 1],
+          total_price: Number(total_price),
+        };
+
+        break;
+      }
+    }
+  }
+
+  console.info(coffee);
 
   res.status(200).end();
 };
