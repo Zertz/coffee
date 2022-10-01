@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { MongoClient } from "mongodb";
 
 type Request = {
   From: string;
@@ -54,8 +55,11 @@ type Response = {
   name: string;
 };
 
-export default (req: NextApiRequest, res: NextApiResponse<Response>) => {
-  const { TextBody } = req.body as Request;
+export default async function inbound(
+  req: NextApiRequest,
+  res: NextApiResponse<Response>
+) {
+  const { FromFull, TextBody } = req.body as Request;
 
   if (!TextBody.includes("<identification@nespresso.com>")) {
     res.status(400).end();
@@ -70,7 +74,7 @@ export default (req: NextApiRequest, res: NextApiResponse<Response>) => {
     .split("\r\n")
     .filter(Boolean);
 
-  const coffee: {
+  const items: {
     name: string;
     quantity: number;
     total_price: number;
@@ -82,7 +86,7 @@ export default (req: NextApiRequest, res: NextApiResponse<Response>) => {
       case 0: {
         const name = order[i];
 
-        coffee.push({
+        items.push({
           name,
           quantity: 0,
           total_price: 0,
@@ -94,8 +98,8 @@ export default (req: NextApiRequest, res: NextApiResponse<Response>) => {
       case 1: {
         const [quantity, unit_price] = order[i].split(" x $");
 
-        coffee[coffee.length - 1] = {
-          ...coffee[coffee.length - 1],
+        items[items.length - 1] = {
+          ...items[items.length - 1],
           quantity: Number(quantity),
           unit_price: Number(unit_price),
         };
@@ -105,8 +109,8 @@ export default (req: NextApiRequest, res: NextApiResponse<Response>) => {
       case 2: {
         const [, total_price] = order[i].split("$");
 
-        coffee[coffee.length - 1] = {
-          ...coffee[coffee.length - 1],
+        items[items.length - 1] = {
+          ...items[items.length - 1],
           total_price: Number(total_price),
         };
 
@@ -115,7 +119,15 @@ export default (req: NextApiRequest, res: NextApiResponse<Response>) => {
     }
   }
 
-  console.info(coffee);
+  const client = new MongoClient(process.env.MONGO_URI as string);
+
+  await client.connect();
+
+  await client.db("coffee").collection("orders").insertOne({
+    createdAt: new Date(),
+    from_email: FromFull.Email,
+    items,
+  });
 
   res.status(200).end();
-};
+}
