@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { MongoClient } from "mongodb";
 import { z } from "zod";
 
-type Request = {
+type PostmarkInboundEmail = {
   From: string;
   MessageStream: "inbound";
   FromName: string;
@@ -52,10 +52,6 @@ type Request = {
   }[];
 };
 
-type Response = {
-  name: string;
-};
-
 const ItemSchema = z.object({
   name: z.string(),
   quantity: z.number(),
@@ -71,13 +67,12 @@ const OrderSchema = z.object({
 });
 
 type Item = z.infer<typeof ItemSchema>;
-type Order = z.infer<typeof OrderSchema>;
 
 export default async function inbound(
   req: NextApiRequest,
-  res: NextApiResponse<Response>
+  res: NextApiResponse
 ) {
-  const { FromFull, TextBody } = req.body as Request;
+  const { FromFull, TextBody } = req.body as PostmarkInboundEmail;
 
   if (!TextBody.includes("Nespresso <identification@nespresso.com>")) {
     res.status(400).end();
