@@ -1,5 +1,5 @@
-import type { NextApiRequest, NextApiResponse } from "next";
 import { MongoClient } from "mongodb";
+import type { NextApiRequest, NextApiResponse } from "next";
 import { z } from "zod";
 
 type PostmarkInboundEmail = {
@@ -81,8 +81,12 @@ export default async function inbound(
   }
 
   const [, ...orderText] = TextBody.substring(
-    TextBody.indexOf("Capsules"),
-    Math.min(TextBody.indexOf("Accessories"), TextBody.indexOf("Subtotal"))
+    TextBody.search(/capsules/i),
+    Math.min(
+      TextBody.search(/machines/i),
+      TextBody.search(/accessories/i),
+      TextBody.search(/subtotal/i)
+    )
   )
     .split("\r\n")
     .filter(Boolean);
