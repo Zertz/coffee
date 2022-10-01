@@ -130,15 +130,22 @@ export default async function inbound(
 
   await client.connect();
 
-  await client
-    .db("coffee")
-    .collection("orders")
-    .insertOne({
-      createdAt: new Date(),
-      orderedAt: new Date(dateText),
-      fromEmail: FromFull.Email,
-      items,
-    });
+  try {
+    await client
+      .db("coffee")
+      .collection("orders")
+      .insertOne({
+        createdAt: new Date(),
+        orderedAt: new Date(dateText),
+        fromEmail: FromFull.Email,
+        items,
+      });
+  } catch (e) {
+    // Ignore duplicate key errors
+    if (!(e as Error).message.includes("E11000")) {
+      throw e;
+    }
+  }
 
   res.status(200).end();
 }
