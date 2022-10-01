@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { MongoClient } from "mongodb";
+import { z } from "zod";
 
 type Request = {
   From: string;
@@ -55,63 +56,75 @@ type Response = {
   name: string;
 };
 
+const ItemSchema = z.object({
+  name: z.string(),
+  quantity: z.number(),
+  totalPrice: z.number(),
+  unitPrice: z.number(),
+});
+
+const OrderSchema = z.object({
+  createdAt: z.date(),
+  orderedAt: z.date(),
+  fromEmail: z.string().email(),
+  items: z.array(ItemSchema),
+});
+
+type Item = z.infer<typeof ItemSchema>;
+type Order = z.infer<typeof OrderSchema>;
+
 export default async function inbound(
   req: NextApiRequest,
   res: NextApiResponse<Response>
 ) {
   const { FromFull, TextBody } = req.body as Request;
 
-  if (!TextBody.includes("<identification@nespresso.com>")) {
+  if (!TextBody.includes("Nespresso <identification@nespresso.com>")) {
     res.status(400).end();
 
     return;
   }
 
-  const [, ...order] = TextBody.substring(
+  const [, ...orderText] = TextBody.substring(
     TextBody.indexOf("Capsules"),
     Math.min(TextBody.indexOf("Accessories"), TextBody.indexOf("Subtotal"))
   )
     .split("\r\n")
     .filter(Boolean);
 
-  const items: {
-    name: string;
-    quantity: number;
-    total_price: number;
-    unit_price: number;
-  }[] = [];
+  const items: Item[] = [];
 
-  for (let i = 0; i < order.length; i += 1) {
+  for (let i = 0; i < orderText.length; i += 1) {
     switch (i % 3) {
       case 0: {
-        const name = order[i];
+        const name = orderText[i];
 
         items.push({
           name,
           quantity: 0,
-          total_price: 0,
-          unit_price: 0,
+          totalPrice: 0,
+          unitPrice: 0,
         });
 
         break;
       }
       case 1: {
-        const [quantity, unit_price] = order[i].split(" x $");
+        const [quantity, unitPrice] = orderText[i].split(" x $");
 
         items[items.length - 1] = {
           ...items[items.length - 1],
           quantity: Number(quantity),
-          unit_price: Number(unit_price),
+          unitPrice: Number(unitPrice),
         };
 
         break;
       }
       case 2: {
-        const [, total_price] = order[i].split("$");
+        const [, totalPrice] = orderText[i].split("$");
 
         items[items.length - 1] = {
           ...items[items.length - 1],
-          total_price: Number(total_price),
+          totalPrice: Number(totalPrice),
         };
 
         break;
@@ -126,20 +139,19 @@ export default async function inbound(
 
   const [, dateText] = sentLine.split(" : ");
 
+  const order = OrderSchema.parse({
+    createdAt: new Date(),
+    orderedAt: new Date(dateText),
+    fromEmail: FromFull.Email,
+    items,
+  });
+
   const client = new MongoClient(process.env.MONGO_URI as string);
 
   await client.connect();
 
   try {
-    await client
-      .db("coffee")
-      .collection("orders")
-      .insertOne({
-        createdAt: new Date(),
-        orderedAt: new Date(dateText),
-        fromEmail: FromFull.Email,
-        items,
-      });
+    await client.db("coffee").collection("orders").insertOne(order);
   } catch (e) {
     // Ignore duplicate key errors
     if (!(e as Error).message.includes("E11000")) {
