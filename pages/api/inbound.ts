@@ -57,12 +57,18 @@ type Response = {
 export default (req: NextApiRequest, res: NextApiResponse<Response>) => {
   const { TextBody } = req.body as Request;
 
-  console.info(
-    TextBody.substring(
-      TextBody.indexOf("Capsules"),
-      TextBody.indexOf("Subtotal")
-    )
-  );
+  if (!TextBody.includes("<identification@nespresso.com>")) {
+    res.status(400).end();
+
+    return;
+  }
+
+  const [, ...order] = TextBody.substring(
+    TextBody.indexOf("Capsules"),
+    Math.min(TextBody.indexOf("Accessories"), TextBody.indexOf("Subtotal"))
+  ).split("\n");
+
+  console.info(order);
 
   res.status(200).end();
 };
