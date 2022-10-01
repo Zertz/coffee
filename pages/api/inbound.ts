@@ -119,15 +119,26 @@ export default async function inbound(
     }
   }
 
+  const [, sentLine] = TextBody.substring(
+    TextBody.indexOf("<identification@nespresso.com>"),
+    TextBody.indexOf("<pierluc@outlook.com>")
+  ).split("\r\n");
+
+  const [, dateText] = sentLine.split(" : ");
+
   const client = new MongoClient(process.env.MONGO_URI as string);
 
   await client.connect();
 
-  await client.db("coffee").collection("orders").insertOne({
-    createdAt: new Date(),
-    from_email: FromFull.Email,
-    items,
-  });
+  await client
+    .db("coffee")
+    .collection("orders")
+    .insertOne({
+      createdAt: new Date(),
+      orderedAt: new Date(dateText),
+      fromEmail: FromFull.Email,
+      items,
+    });
 
   res.status(200).end();
 }
