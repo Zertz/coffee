@@ -1,6 +1,6 @@
 import Head from "next/head";
-import { useMemo } from "react";
-import { AxisOptions, Chart } from "react-charts";
+import { useEffect, useMemo, useState } from "react";
+import type { AxisOptions } from "react-charts";
 
 type DailyStars = {
   date: Date;
@@ -52,6 +52,13 @@ export default function Home() {
     []
   );
 
+  const [ReactCharts, setReactCharts] =
+    useState<typeof import("react-charts")>();
+
+  useEffect(() => {
+    import("react-charts").then(setReactCharts);
+  }, []);
+
   return (
     <main
       style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0 }}
@@ -59,13 +66,15 @@ export default function Home() {
       <Head>
         <title>Coffee</title>
       </Head>
-      <Chart
-        options={{
-          data,
-          primaryAxis,
-          secondaryAxes,
-        }}
-      />
+      {ReactCharts && (
+        <ReactCharts.Chart
+          options={{
+            data,
+            primaryAxis,
+            secondaryAxes,
+          }}
+        />
+      )}
     </main>
   );
 }
