@@ -61,7 +61,7 @@ const ItemSchema = z.object({
 
 const OrderSchema = z.object({
   createdAt: z.date(),
-  orderedAt: z.union([z.date(), z.string()]),
+  orderedAt: z.string(),
   fromEmail: z.string().email(),
   items: z.array(ItemSchema),
 });
@@ -140,7 +140,7 @@ export default async function inbound(
 
   const order = OrderSchema.parse({
     createdAt: new Date(),
-    orderedAt: new Date(dateText) || dateText,
+    orderedAt: dateText,
     fromEmail: FromFull.Email,
     items,
   });
