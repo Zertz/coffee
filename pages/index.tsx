@@ -1,52 +1,31 @@
 import Head from "next/head";
 import { useEffect, useMemo, useState } from "react";
 import type { AxisOptions } from "react-charts";
+import { orders } from "../data";
 
-type DailyStars = {
-  date: Date;
-  stars: number;
+type AggregateDocument = {
+  _id: string;
+  quantity: number;
+  totalPrice: number;
+  minUnitPrice: number;
+  averageUnitPrice: number;
+  maxUnitPrice: number;
 };
 
-type Series = {
-  label: string;
-  data: DailyStars[];
-};
-
-const data: Series[] = [
-  {
-    label: "React Charts",
-    data: [
-      {
-        date: new Date(),
-        stars: 202123,
-      },
-      // ...
-    ],
-  },
-  {
-    label: "React Query",
-    data: [
-      {
-        date: new Date(),
-        stars: 10234230,
-      },
-      // ...
-    ],
-  },
-];
-
-export default function Home() {
+export default function Home({
+  data,
+}: Awaited<ReturnType<typeof getStaticProps>>["props"]) {
   const primaryAxis = useMemo(
-    (): AxisOptions<DailyStars> => ({
-      getValue: (datum) => datum.date,
+    (): AxisOptions<AggregateDocument> => ({
+      getValue: (datum) => datum._id,
     }),
     []
   );
 
   const secondaryAxes = useMemo(
-    (): AxisOptions<DailyStars>[] => [
+    (): AxisOptions<AggregateDocument>[] => [
       {
-        getValue: (datum) => datum.stars,
+        getValue: (datum) => datum.quantity,
       },
     ],
     []
@@ -77,4 +56,47 @@ export default function Home() {
       )}
     </main>
   );
+}
+
+export async function getStaticProps() {
+  const docs = await (
+    await orders()
+  )
+    .aggregate<AggregateDocument>([
+      {
+        $unwind: "$items",
+      },
+      {
+        $group: {
+          _id: "$items.name",
+          quantity: {
+            $sum: "$items.quantity",
+          },
+          totalPrice: {
+            $sum: "$items.totalPrice",
+          },
+          minUnitPrice: {
+            $min: "$items.unitPrice",
+          },
+          averageUnitPrice: {
+            $avg: "$items.unitPrice",
+          },
+          maxUnitPrice: {
+            $max: "$items.unitPrice",
+          },
+        },
+      },
+    ])
+    .toArray();
+
+  return {
+    props: {
+      data: [
+        {
+          label: "Coffee",
+          data: docs,
+        },
+      ],
+    },
+  };
 }

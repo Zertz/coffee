@@ -1,6 +1,5 @@
-import { MongoClient } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { z } from "zod";
+import * as data from "../../data";
 
 type PostmarkInboundEmail = {
   From: string;
@@ -51,22 +50,6 @@ type PostmarkInboundEmail = {
     ContentID: string;
   }[];
 };
-
-const ItemSchema = z.object({
-  name: z.string(),
-  quantity: z.number(),
-  totalPrice: z.number(),
-  unitPrice: z.number(),
-});
-
-const OrderSchema = z.object({
-  createdAt: z.date(),
-  orderedAt: z.string(),
-  fromEmail: z.string().email(),
-  items: z.array(ItemSchema),
-});
-
-type Item = z.infer<typeof ItemSchema>;
 
 export default async function inbound(
   req: NextApiRequest,
@@ -150,12 +133,8 @@ export default async function inbound(
     items,
   });
 
-  const client = new MongoClient(process.env.MONGO_URI as string);
-
-  await client.connect();
-
   try {
-    await client.db("coffee").collection("orders").insertOne(order);
+    await (await data.orders()).insertOne(order);
   } catch (e) {
     // Ignore duplicate key errors
     if (!(e as Error).message.includes("E11000")) {
