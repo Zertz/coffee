@@ -80,23 +80,28 @@ export default async function inbound(
     return;
   }
 
-  const [, ...orderText] = TextBody.substring(
-    TextBody.search(/capsules/i),
+  const capsulesIndex = TextBody.search(/capsules/i);
+  const machinesIndex = TextBody.search(/machines/i);
+  const accessoriesIndex = TextBody.search(/accessories/i);
+  const subtotalIndex = TextBody.search(/subtotal/i);
+
+  const orderText = TextBody.substring(
+    capsulesIndex,
     Math.min(
-      TextBody.search(/machines/i),
-      TextBody.search(/accessories/i),
-      TextBody.search(/subtotal/i)
+      machinesIndex > capsulesIndex ? machinesIndex : Infinity,
+      accessoriesIndex > capsulesIndex ? accessoriesIndex : Infinity,
+      subtotalIndex > capsulesIndex ? subtotalIndex : Infinity
     )
-  )
-    .split("\r\n")
-    .filter(Boolean);
+  );
+
+  const [, ...orderLines] = orderText.split("\r\n").filter(Boolean);
 
   const items: Item[] = [];
 
-  for (let i = 0; i < orderText.length; i += 1) {
+  for (let i = 0; i < orderLines.length; i += 1) {
     switch (i % 3) {
       case 0: {
-        const name = orderText[i];
+        const name = orderLines[i];
 
         items.push({
           name,
@@ -108,7 +113,7 @@ export default async function inbound(
         break;
       }
       case 1: {
-        const [quantity, unitPrice] = orderText[i].split(" x $");
+        const [quantity, unitPrice] = orderLines[i].split(" x $");
 
         items[items.length - 1] = {
           ...items[items.length - 1],
@@ -119,7 +124,7 @@ export default async function inbound(
         break;
       }
       case 2: {
-        const [, totalPrice] = orderText[i].split("$");
+        const [, totalPrice] = orderLines[i].split("$");
 
         items[items.length - 1] = {
           ...items[items.length - 1],
