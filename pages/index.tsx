@@ -86,6 +86,11 @@ export async function getStaticProps() {
           },
         },
       },
+      {
+        $sort: {
+          quantity: 1,
+        },
+      },
     ])
     .toArray();
 
