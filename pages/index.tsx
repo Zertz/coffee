@@ -1,7 +1,7 @@
 import Head from "next/head";
 import { useEffect, useMemo, useState } from "react";
 import type { AxisOptions } from "react-charts";
-import { orders } from "../data";
+import { OrdersCollection } from "../data";
 
 type AggregateDocument = {
   _id: string;
@@ -60,7 +60,7 @@ export default function Home({
 
 export async function getStaticProps() {
   const docs = await (
-    await orders()
+    await OrdersCollection()
   )
     .aggregate<AggregateDocument>([
       {

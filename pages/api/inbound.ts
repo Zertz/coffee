@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import * as data from "../../data";
+import { Item, OrderSchema, OrdersCollection } from "../../data";
 
 type PostmarkInboundEmail = {
   From: string;
@@ -134,7 +134,7 @@ export default async function inbound(
   });
 
   try {
-    await (await data.orders()).insertOne(order);
+    await (await OrdersCollection()).insertOne(order);
   } catch (e) {
     // Ignore duplicate key errors
     if (!(e as Error).message.includes("E11000")) {

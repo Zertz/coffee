@@ -18,7 +18,7 @@ export const OrderSchema = z.object({
 export type Item = z.infer<typeof ItemSchema>;
 export type Order = z.infer<typeof OrderSchema>;
 
-export async function orders() {
+export async function OrdersCollection() {
   const client = new MongoClient(process.env.MONGO_URI as string);
 
   await client.connect();
