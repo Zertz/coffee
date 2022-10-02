@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { Item, OrderSchema, OrdersCollection } from "../../data";
+import { OrderSchema, OrdersCollection } from "../../data";
+import { lineToItems } from "../../lineToItems";
 
 type PostmarkInboundEmail = {
   From: string;
@@ -79,45 +80,7 @@ export default async function inbound(
 
   const [, ...orderLines] = orderText.split("\r\n").filter(Boolean);
 
-  const items: Item[] = [];
-
-  for (let i = 0; i < orderLines.length; i += 1) {
-    switch (i % 3) {
-      case 0: {
-        const name = orderLines[i];
-
-        items.push({
-          name,
-          quantity: 0,
-          totalPrice: 0,
-          unitPrice: 0,
-        });
-
-        break;
-      }
-      case 1: {
-        const [quantity, unitPrice] = orderLines[i].split(" x $");
-
-        items[items.length - 1] = {
-          ...items[items.length - 1],
-          quantity: Number(quantity),
-          unitPrice: Number(unitPrice),
-        };
-
-        break;
-      }
-      case 2: {
-        const [, totalPrice] = orderLines[i].split("$");
-
-        items[items.length - 1] = {
-          ...items[items.length - 1],
-          totalPrice: Number(totalPrice),
-        };
-
-        break;
-      }
-    }
-  }
+  const items = lineToItems(orderLines);
 
   const [, sentLine] = TextBody.substring(
     TextBody.indexOf("<identification@nespresso.com>"),
