@@ -87,6 +87,13 @@ export async function getStaticProps() {
         },
       },
       {
+        $match: {
+          totalPrice: {
+            $gt: 0,
+          },
+        },
+      },
+      {
         $sort: {
           quantity: 1,
         },
