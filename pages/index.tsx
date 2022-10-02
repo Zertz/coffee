@@ -99,12 +99,6 @@ export async function getStaticProps() {
           },
         },
       },
-      {
-        $sort: {
-          quantity: 1,
-          _id: 1,
-        },
-      },
     ])
     .toArray();
 
@@ -115,8 +109,11 @@ export async function getStaticProps() {
           label: "Coffee",
           data: docs
             .reduce<typeof docs>((acc, doc) => {
+              // Merge coffees that have been renamed
               const similar = acc.find(
-                ({ _id }) => `Ispirazione ${_id}` === doc._id
+                ({ _id }) =>
+                  `Ispirazione ${_id}` === doc._id ||
+                  _id === `Ispirazione ${doc._id}`
               );
 
               if (similar) {
@@ -145,7 +142,10 @@ export async function getStaticProps() {
             .map(({ _id, ...rest }) => ({
               name: _id,
               ...rest,
-            })),
+            }))
+            .sort(
+              (a, b) => a.quantity - b.quantity || a.name.localeCompare(b.name)
+            ),
         },
       ],
     },
